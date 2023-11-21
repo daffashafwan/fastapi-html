@@ -14,7 +14,5 @@ async def login(request: Request):
 
 @app.post("/login")
 async def process_login(username: str = Form(...), password: str = Form(...)):
-    # Here, you can implement your authentication logic
-    # For demonstration purposes, let's print the received credentials
     print(f"Username: {username}, Password: {password}")
     return {"message": "Login successful"}
