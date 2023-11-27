@@ -2,7 +2,7 @@ from fastapi import FastAPI, Form, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-import asyncpg
+import mysql.connector
 
 app = FastAPI()
 
@@ -13,23 +13,12 @@ class UserLogin(BaseModel):
     username: str
     password: str
 
-
-# Function to create a connection pool
-async def create_connection_pool():
-    return await asyncpg.create_pool(
-        user='',
-        password='',
-        database='',
-        host='localhost'
-    )
-
-@app.on_event("startup")
-async def startup():
-    app.state.pool = await create_connection_pool()
-
-@app.on_event("shutdown")
-async def shutdown():
-    await app.state.pool.close() 
+db = mysql.connector.connect(
+    host="localhost",
+    user="your_username",
+    passwd="your_password",
+    database="your_database"
+)
 
 # path default untuk running fungsi login()
 # ngebuka file login.html yang ada di folder templates
@@ -41,15 +30,16 @@ async def login(request: Request):
 # path login untuk running fungsi process_login()
 # process login panggil database
 # nyocokin username sama password
-# kalau username atau password tidak sesuai kasih error "login gagal"
+# kalau username atau password tidak sesuai kasih error "login gga"
 @app.post("/login")
 async def process_login(username: str = Form(...), password: str = Form(...)):
     print(f"Username: {username}, Password: {password}")
     user_login_instance = UserLogin(username=username, password=password)
-    query = "SELECT * FROM users WHERE username = $1 AND password = $2"
-    async with app.state.pool.acquire() as connection:
-        result = await connection.fetchrow(query, user_login_instance.username, user_login_instance.password)
-        if result:
-            return {"message": "Login berhasil"}
-        else:
-            raise HTTPException(status_code=401, detail="login gagal")
+    query = "SELECT * FROM users WHERE username = %s AND password = %s"
+    cursor.execute(query, (user_login_instance.username, user_login_instance.password))
+    result = cursor.fetchone()
+
+    if result:
+        return {"message": "Login successful"}
+    else:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
